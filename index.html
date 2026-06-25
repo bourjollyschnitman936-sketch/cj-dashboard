@@ -379,7 +379,7 @@ tbody tr:hover{background:#FAFBFF}
 // 配置
 // ════════════════════════════════════════
 const STORE_KEY = 'cj_worker_url';
-let WORKER_URL = localStorage.getItem(STORE_KEY) || 'http://8.163.120.29';
+let WORKER_URL = localStorage.getItem(STORE_KEY) || '';
 
 // 运行时数据
 let REC = [], LEADS = [], DEALS = [], MEDIA = [];
@@ -458,10 +458,62 @@ function getDate(v){
 }
 
 // 标准化前台登记记录
-// Worker已在后端完成标准化，直接透传
-function normalizeRec(r){ return r; }
-function normalizeOl(r){ return r; }
-function normalizeDl(r){ return r; }
+function normalizeRec(r){
+  return {
+    date:     getDate(matchField(r,['日期','date','时间'])),
+    sa:       getText(matchField(r,['顾问','销售','接待','姓名'])),
+    name:     getText(matchField(r,['客户姓名','姓名','客户名','名称'])),
+    phone:    getText(matchField(r,['电话','手机','联系'])),
+    channel:  getText(matchField(r,['渠道','来源','获取'])),
+    buytype:  getText(matchField(r,['购车类型','购买类型','类型'])),
+    model:    getText(matchField(r,['意向车型','车型','车辆'])),
+    drive:    getText(matchField(r,['试驾','试乘','邀请试'])),
+    intent:   getText(matchField(r,['意向级别','意向','级别'])),
+    visits:   getText(matchField(r,['来店次数','次数','来访'])),
+    bottleneck: getText(matchField(r,['瓶颈','成交瓶颈','备注'])),
+  };
+}
+
+// 标准化网销跟进记录
+function normalizeOl(r){
+  return {
+    model:    getText(matchField(r,['车型','意向车型'])),
+    submodel: getText(matchField(r,['细分','子车型','具体'])),
+    sa:       getText(matchField(r,['顾问','专员','跟进人'])),
+    src2:     getText(matchField(r,['二级来源','来源分类','处理后二级'])),
+    src3:     getText(matchField(r,['三级','平台','汽车之家','懂车帝'])),
+    status:   getText(matchField(r,['线索状态','状态','门店线索'])),
+    valid:    getText(matchField(r,['是否有效','有效'])),
+    intent:   getText(matchField(r,['意向级别','意向级别名称','意向'])),
+    result:   getText(matchField(r,['跟进结果','结果'])),
+    custType: getText(matchField(r,['客户类型','类型'])),
+  };
+}
+
+// 标准化成交记录
+function normalizeDl(r){
+  return {
+    orderDate:    getDate(matchField(r,['订单日期','下单','成交日期'])),
+    invoiceDate:  getDate(matchField(r,['开票日期','开票'])),
+    sa:           getText(matchField(r,['销售','顾问','销售顾问'])),
+    customer:     getText(matchField(r,['客户','客户姓名','买家'])),
+    model:        getText(matchField(r,['车型','车辆','意向车型'])),
+    contractPrice:getNum(matchField(r,['合同价','成交价','合同金额'])),
+    invoicePrice: getNum(matchField(r,['开票价','开票金额'])),
+    commission:   getNum(matchField(r,['厂家佣金','佣金','返佣'])),
+    cost:         getNum(matchField(r,['成本价','成本'])),
+    insurance:    getNum(matchField(r,['保险','保险费用'])),
+    tradeSubsidy: getNum(matchField(r,['二手车补贴','置换补贴','补贴'])),
+    tradeReturn:  getNum(matchField(r,['置换后退','后退'])),
+    loanPlan:     getText(matchField(r,['贷款方案','贷款','金融方案'])),
+    loanRebate:   getNum(matchField(r,['贷款返利','返利','金融返利'])),
+    loanFee:      getNum(matchField(r,['贷款手续费','手续费'])),
+    extraGift:    getNum(matchField(r,['额外精品','精品支出','精品'])),
+    referral:     getNum(matchField(r,['转介绍','介绍费'])),
+    stdGift:      getNum(matchField(r,['常规精品','标准精品'])),
+    profit:       getNum(matchField(r,['毛利','预估毛利','利润'])),
+  };
+}
 
 // ════════════════════════════════════════
 // 连接 & 数据加载
@@ -510,9 +562,9 @@ async function loadData(){
     if(allDates.length){
       const minD = allDates[0];
       const maxD = allDates[allDates.length-1];
-      const y=maxD.slice(0,4), mo=maxD.slice(5,7);
-      $('ds').value = y+'-'+mo+'-01';
-      $('de').value = localDate(new Date(parseInt(y), parseInt(mo), 0));
+      const y=maxD.slice(0,4), m=maxD.slice(5,7);
+      $('ds').value = y+'-'+m+'-01';
+      $('de').value = new Date(parseInt(y), parseInt(m), 0).toISOString().slice(0,10);
     }
     renderOv();
     toast('✅ 飞书数据加载成功！到访'+REC.length+'条 / 线索'+LEADS.length+'条 / 成交'+DEALS.length+'台');
@@ -541,9 +593,6 @@ async function refreshData(){
 // ════════════════════════════════════════
 // 日期范围
 // ════════════════════════════════════════
-function localDate(d){
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
 function setRange(type, el){
   document.querySelectorAll('.dq').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
@@ -551,18 +600,18 @@ function setRange(type, el){
   const y=today.getFullYear(), m=today.getMonth(), d=today.getDate();
   let s, e;
   if(type==='today'){
-    s=e=localDate(today);
+    s=e=today.toISOString().slice(0,10);
   } else if(type==='week'){
     const day=today.getDay()||7;
-    const mon=new Date(y,m,d-day+1);
-    const sun=new Date(y,m,d-day+7);
-    s=localDate(mon); e=localDate(sun);
+    const mon=new Date(today); mon.setDate(d-day+1);
+    const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+    s=mon.toISOString().slice(0,10); e=sun.toISOString().slice(0,10);
   } else if(type==='month'){
     s=`${y}-${String(m+1).padStart(2,'0')}-01`;
-    e=localDate(new Date(y,m+1,0));
+    e=new Date(y,m+1,0).toISOString().slice(0,10);
   } else {
     const allD=REC.map(r=>r.date).filter(Boolean).sort();
-    s=allD[0]||'2026-01-01'; e=allD[allD.length-1]||localDate(today);
+    s=allD[0]||'2026-01-01'; e=allD[allD.length-1]||today.toISOString().slice(0,10);
   }
   $('ds').value=s; $('de').value=e;
   renderOv();
@@ -584,9 +633,9 @@ function renderOv(){
   const avgProfit = td>0?tProfit/td:0;
   const convRate  = tv>0?td/tv*100:0;
 
-  const validLeads   = LEADS.filter(l=>l.valid==='是').length;
-  const invitedLeads = visits.filter(v=>{const sa=v.onlineSa||''; return sa && sa!=='/' && sa.trim()!=='';}).length;
-  const failLeads    = LEADS.filter(l=>l.result==='战败').length;
+  const validLeads   = LEADS.filter(l=>getText(l.valid).includes('是')||getText(l.valid).includes('有效')).length;
+  const invitedLeads = LEADS.filter(l=>{const r=getText(l.result); return r.includes('到店')||r.includes('邀约成功');}).length;
+  const failLeads    = LEADS.filter(l=>getText(l.result).includes('战败')).length;
   const hasPhone     = visits.filter(v=>v.phone&&!v.phone.includes('微信')).length;
   const driveCount   = visits.filter(v=>{const d=getText(v.drive); return d==='Y'||d.includes('是')||d.includes('已');}).length;
   const hotCount     = visits.filter(v=>v.intent==='H'||v.intent==='A').length;
@@ -837,7 +886,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(saved){ $('worker-url').value=saved; }
   $('ds').value=new Date().toISOString().slice(0,8)+'01';
   $('de').value=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).toISOString().slice(0,10);
-  if(WORKER_URL){ $('worker-url').value=WORKER_URL; loadData(); }
+  if(WORKER_URL){ loadData(); }
   else { hideOverlay(); setStatus('err','请配置Worker URL'); }
 });
 </script>
