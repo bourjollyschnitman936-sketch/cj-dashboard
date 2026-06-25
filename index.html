@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>广汽传祺长江店 · 销售数据看板</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#C8102E;--red-lt:#FEF0F1;
+  --green:#16A34A;--green-dk:#166534;--green-lt:#DCFCE7;
+  --blue:#2563EB;--blue-lt:#DBEAFE;
+  --gold:#D97706;--gold-lt:#FEF3C7;
+  --purple:#7C3AED;--purple-lt:#EDE9FE;
+  --teal:#0891B2;--teal-lt:#CFFAFE;
+  --orange:#EA580C;--orange-lt:#FFEDD5;
+  --bg:#F0F2F5;--card:#fff;--bdr:#E8EAED;
+  --t1:#111827;--t2:#6B7280;--t3:#9CA3AF
+}
+body{font-family:'Inter','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--t1);font-size:13px}
+
+/* TOP */
+.topbar{background:linear-gradient(135deg,#C8102E,#6B0017 60%,#3D0009);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:200;box-shadow:0 3px 16px rgba(150,0,20,.35)}
+.tl{display:flex;align-items:center;gap:11px}
+.tlogo{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:9px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.2)}
+.tt{font-size:15px;font-weight:800;color:#fff}
+.ts-sub{font-size:10px;color:rgba(255,255,255,.6);margin-top:1px}
+.tright{display:flex;align-items:center;gap:10px}
+.tdate{font-size:11px;color:rgba(255,255,255,.8);background:rgba(255,255,255,.12);padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.2)}
+
+/* 状态栏 */
+.statusbar{background:#fff;border-bottom:1px solid var(--bdr);padding:7px 24px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.sleft{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sindic{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
+.sdot{width:8px;height:8px;border-radius:50%;background:#9CA3AF}
+.sdot.ok{background:#16A34A;box-shadow:0 0 0 2px #DCFCE7}
+.sdot.loading{background:#D97706;animation:pulse 1s infinite}
+.sdot.err{background:#DC2626}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sright{display:flex;gap:7px;flex-wrap:wrap}
+.sbtn{padding:5px 13px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid;white-space:nowrap;transition:all .15s}
+.sbtn:hover{opacity:.85}
+.sbtn-green{background:var(--green-lt);color:var(--green-dk);border-color:#BBF7D0}
+.sbtn-blue{background:var(--blue-lt);color:#1E40AF;border-color:#BFDBFE}
+.sbtn-red{background:var(--red);color:#fff;border-color:var(--red)}
+.sbtn-gray{background:#F3F4F6;color:var(--t2);border-color:var(--bdr)}
+.worker-input{padding:5px 10px;border:1.5px solid var(--bdr);border-radius:7px;font-size:11px;color:var(--t1);outline:none;width:260px;background:#F9FAFB;font-family:inherit}
+.worker-input:focus{border-color:var(--red);background:#fff}
+
+/* NAV */
+.nav{background:#fff;border-bottom:2px solid var(--bdr);display:flex;padding:0 24px;gap:1px;overflow-x:auto}
+.nav::-webkit-scrollbar{height:0}
+.ni{padding:12px 15px;font-size:12.5px;font-weight:500;color:var(--t2);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;white-space:nowrap;display:flex;align-items:center;gap:5px;transition:all .15s}
+.ni.on{color:var(--red);border-bottom-color:var(--red);font-weight:700}
+.ni:hover:not(.on){color:var(--t1);background:#FAFAFA}
+.nbg{font-size:9px;padding:1px 5px;border-radius:7px;font-weight:700}
+
+/* MAIN */
+.main{padding:16px 24px;max-width:1600px;margin:0 auto}
+.pg{display:none}.pg.on{display:block}
+
+/* LOADING OVERLAY */
+.loading-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);backdrop-filter:blur(4px);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.loading-overlay.hide{display:none}
+.spin{width:40px;height:40px;border:3px solid var(--bdr);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-msg{font-size:14px;font-weight:600;color:var(--t2)}
+.loading-sub{font-size:12px;color:var(--t3)}
+
+/* DATE BAR */
+.dbar{background:#fff;border-radius:11px;padding:11px 16px;margin-bottom:14px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;box-shadow:0 1px 4px rgba(0,0,0,.06);border:1px solid var(--bdr)}
+.dlbl{font-size:12px;font-weight:700}
+.di{padding:6px 9px;border:1.5px solid var(--bdr);border-radius:7px;font-size:12px;color:var(--t1);outline:none;background:#F9FAFB;font-family:inherit}
+.di:focus{border-color:var(--red)}
+.dq{padding:5px 13px;border-radius:18px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--bdr);background:#fff;color:var(--t2);transition:all .12s}
+.dq.on,.dq:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.dapply{padding:6px 15px;background:var(--red);color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer}
+.dsrc{margin-left:auto;font-size:10px;color:var(--t3);background:#F9FAFB;padding:3px 9px;border-radius:5px;border:1px solid var(--bdr)}
+
+/* GRIDS */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:14px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-bottom:14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;margin-bottom:13px}
+.g75{display:grid;grid-template-columns:7fr 5fr;gap:13px;margin-bottom:13px}
+
+/* KPI */
+.sh{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+.sh::after{content:'';flex:1;height:1px;background:var(--bdr)}
+.kc{background:#fff;border-radius:13px;padding:17px 18px;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid var(--bdr);position:relative;overflow:hidden}
+.ka{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:13px 0 0 13px}
+.kh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px}
+.ki{width:37px;height:37px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.kv{font-size:30px;font-weight:900;line-height:1;margin-bottom:3px}
+.ku{font-size:12px;font-weight:500;color:var(--t3);margin-left:2px}
+.kl{font-size:11px;color:var(--t2);font-weight:600}
+.ks{font-size:11px;color:var(--t3);margin-top:3px}
+.sc{background:#fff;border-radius:11px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.05);border:1px solid var(--bdr)}
+.sclbl{font-size:10px;color:var(--t3);font-weight:600;margin-bottom:4px}
+.scv{font-size:21px;font-weight:800}
+.scu{font-size:10px;color:var(--t3);margin-left:2px}
+.scs{font-size:10px;margin-top:2px}
+
+/* CARD */
+.card{background:#fff;border-radius:12px;padding:15px 17px;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid var(--bdr)}
+.ct{font-size:13px;font-weight:700;margin-bottom:11px;display:flex;align-items:center;gap:6px}
+.ctb{width:3px;height:14px;border-radius:2px;flex-shrink:0}
+.cbg{font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;margin-left:auto}
+
+/* BARS */
+.bl{display:flex;flex-direction:column;gap:8px}
+.br{display:flex;align-items:center;gap:8px}
+.bdt{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.bnm{font-size:11px;width:90px;flex-shrink:0;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bw{flex:1;background:#F3F4F6;border-radius:4px;height:7px;overflow:hidden}
+.bf{height:100%;border-radius:4px;transition:width .45s ease}
+.bcnt{font-size:12px;font-weight:700;width:30px;text-align:right;flex-shrink:0}
+.bpct{font-size:10px;color:var(--t3);width:32px;text-align:right}
+
+/* FUNNEL */
+.fl{display:flex;flex-direction:column;gap:8px}
+.fr{display:flex;align-items:center;gap:8px}
+.flb{font-size:11px;color:var(--t2);width:65px;text-align:right;flex-shrink:0}
+.ft{flex:1;background:#F3F4F6;border-radius:5px;height:26px;overflow:hidden}
+.ff{height:100%;border-radius:5px;display:flex;align-items:center;padding-left:9px;font-size:10px;font-weight:700;color:#fff;min-width:2%;transition:width .5s ease}
+.fn{font-size:12px;font-weight:700;width:32px;text-align:right}
+.fp{font-size:10px;color:var(--t3);width:32px;text-align:right}
+
+/* SA */
+.sal{display:flex;flex-direction:column;gap:7px}
+.sar{display:flex;align-items:center;gap:8px;padding:8px 11px;background:#FAFAFA;border-radius:8px;border:1px solid var(--bdr)}
+.srk{width:20px;font-size:12px;font-weight:800;color:var(--t3);text-align:center}
+.sav{width:29px;height:29px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#fff;flex-shrink:0}
+.si{flex:1}.sn{font-size:12px;font-weight:700}.sd{font-size:10px;color:var(--t3);margin-top:1px}
+.sbw{width:65px}.sbb{background:var(--bdr);border-radius:3px;height:4px;overflow:hidden;margin-bottom:2px}
+.sbf{height:100%;border-radius:3px}.spc{font-size:9px;text-align:right}
+.sdt{font-size:16px;font-weight:900;min-width:26px;text-align:right}
+
+/* TABLE */
+.tw{overflow-x:auto;border-radius:8px;border:1px solid var(--bdr)}
+table{width:100%;border-collapse:collapse}
+thead th{font-size:10px;color:var(--t2);font-weight:700;padding:8px 10px;background:#FAFAFA;border-bottom:1px solid var(--bdr);white-space:nowrap;text-align:left}
+tbody td{padding:8px 10px;font-size:12px;border-bottom:1px solid #F9FAFB;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#FAFBFF}
+.etc{text-align:center;color:var(--t3);padding:28px!important}
+
+/* TAG */
+.tag{display:inline-block;padding:2px 6px;border-radius:8px;font-size:10px;font-weight:700}
+.tgr{background:#FEE2E2;color:#991B1B}.tgg{background:#DCFCE7;color:#166534}
+.tgb{background:#DBEAFE;color:#1E40AF}.tgy{background:#FEF3C7;color:#92400E}
+.tgp{background:#EDE9FE;color:#5B21B6}.tgx{background:#F3F4F6;color:#6B7280}
+.tgtl{background:#CFFAFE;color:#164E63}
+
+/* PROFIT */
+.pbox{background:linear-gradient(135deg,#EDFAF3,#D1FAE5);border-radius:11px;padding:14px 17px;margin-bottom:13px;border:1px solid #BBF7D0}
+.pr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(22,163,74,.1)}
+.pr:last-child{border:none}
+.pk{font-size:11px;color:#374151}.pv{font-size:13px;font-weight:800;color:var(--green-dk)}.pn{color:#DC2626}
+
+/* BARCHART */
+.bch{display:flex;align-items:flex-end;gap:5px;height:96px;padding:0 2px}
+.bcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bvl{font-size:9px;color:var(--t3);font-weight:600}
+.bbar{width:100%;background:var(--red);border-radius:3px 3px 0 0;opacity:.8;position:relative}
+.bdl{font-size:9px;background:var(--green);color:#fff;padding:1px 3px;border-radius:3px;position:absolute;top:-14px;left:50%;transform:translateX(-50%);white-space:nowrap}
+.bday{font-size:9px;color:var(--t2)}
+
+/* ERROR BOX */
+.errbox{background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:16px 20px;margin-bottom:14px;font-size:12px;color:#991B1B;line-height:1.7}
+.errbox strong{display:block;font-size:13px;margin-bottom:6px}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:#1F2937;color:#fff;padding:10px 16px;border-radius:8px;font-size:12px;font-weight:600;z-index:500;transform:translateY(60px);opacity:0;transition:all .25s;box-shadow:0 4px 18px rgba(0,0,0,.22)}
+.toast.on{transform:translateY(0);opacity:1}
+
+@media(max-width:1100px){.g4{grid-template-columns:1fr 1fr}.g5{grid-template-columns:repeat(3,1fr)}.g2,.g3,.g75{grid-template-columns:1fr}}
+@media(max-width:660px){.g4,.g5{grid-template-columns:1fr 1fr}.main{padding:10px 11px}}
+</style>
+</head>
+<body>
+
+<!-- 加载遮罩 -->
+<div class="loading-overlay" id="overlay">
+  <div class="spin"></div>
+  <div class="loading-msg" id="loading-msg">正在连接飞书数据...</div>
+  <div class="loading-sub" id="loading-sub">首次加载约5-10秒</div>
+</div>
+
+<!-- 顶栏 -->
+<header class="topbar">
+  <div class="tl">
+    <div class="tlogo">
+      <svg viewBox="0 0 22 22" fill="none" width="20" height="20">
+        <circle cx="11" cy="11" r="9" stroke="white" stroke-width="1.3"/>
+        <path d="M7 8h5a3 3 0 0 1 0 6H7V8z" stroke="white" stroke-width="1.3" fill="none"/>
+        <circle cx="15.5" cy="8" r="1" fill="white"/>
+      </svg>
+    </div>
+    <div><div class="tt">广汽传祺长江店 · 销售数据看板</div><div class="ts-sub">实时对接飞书 · 员工填表即更新</div></div>
+  </div>
+  <div class="tright">
+    <span class="tdate" id="tdate">—</span>
+  </div>
+</header>
+
+<!-- 状态栏 -->
+<div class="statusbar">
+  <div class="sleft">
+    <div class="sindic">
+      <div class="sdot" id="sdot"></div>
+      <span id="sstatus">未连接</span>
+    </div>
+    <span style="font-size:10px;color:var(--t3)" id="slastupdate"></span>
+    <span style="font-size:10px;color:var(--t3)" id="scount"></span>
+  </div>
+  <div class="sright">
+    <input class="worker-input" id="worker-url" placeholder="粘贴你的 Cloudflare Worker URL（如 https://xxx.workers.dev）" />
+    <button class="sbtn sbtn-green" onclick="saveAndConnect()">🔌 连接</button>
+    <button class="sbtn sbtn-blue" onclick="refreshData()">🔄 刷新数据</button>
+    <button class="sbtn sbtn-gray" onclick="exportData()">⬇ 导出备份</button>
+  </div>
+</div>
+
+<!-- 导航 -->
+<nav class="nav">
+  <div class="ni on" onclick="goPage('ov',this)">📊 经营总览</div>
+  <div class="ni" onclick="goPage('rec',this)">📋 前台登记 <span class="nbg tgb" id="nbrec">—</span></div>
+  <div class="ni" onclick="goPage('ol',this)">📞 网销跟进 <span class="nbg tgtl" id="nbol">—</span></div>
+  <div class="ni" onclick="goPage('dl',this)">🤝 成交分析 <span class="nbg tgg" id="nbdl">—</span></div>
+  <div class="ni" onclick="goPage('wk',this)">📆 周报</div>
+  <div class="ni" onclick="goPage('mo',this)">📈 月报</div>
+</nav>
+
+<main class="main">
+
+<!-- ══ 经营总览 ══ -->
+<div class="pg on" id="pg-ov">
+  <div class="dbar">
+    <span class="dlbl">📅 统计周期</span>
+    <input type="date" class="di" id="ds">
+    <span style="color:var(--t3);font-size:12px">至</span>
+    <input type="date" class="di" id="de">
+    <div style="display:flex;gap:5px">
+      <button class="dq" onclick="setRange('today',this)">今日</button>
+      <button class="dq" onclick="setRange('week',this)">本周</button>
+      <button class="dq on" onclick="setRange('month',this)">本月</button>
+      <button class="dq" onclick="setRange('all',this)">全部</button>
+    </div>
+    <button class="dapply" onclick="renderOv()">刷新</button>
+    <span class="dsrc" id="dsrc">📂 未加载</span>
+  </div>
+
+  <div id="errbox-ov"></div>
+
+  <div class="sh">核心经营数据</div>
+  <div class="g4">
+    <div class="kc"><div class="ka" style="background:var(--red)"></div><div class="kh"><div class="ki" style="background:var(--red-lt)">👥</div></div><div class="kv" id="kv1" style="color:var(--t1)">—<span class="ku">组</span></div><div class="kl">到店总客流</div><div class="ks" id="ks1">—</div></div>
+    <div class="kc"><div class="ka" style="background:var(--green)"></div><div class="kh"><div class="ki" style="background:var(--green-lt)">🤝</div></div><div class="kv" id="kv2" style="color:var(--green)">—<span class="ku">台</span></div><div class="kl">成交台数</div><div class="ks" id="ks2">—</div></div>
+    <div class="kc"><div class="ka" style="background:var(--gold)"></div><div class="kh"><div class="ki" style="background:var(--gold-lt)">💰</div></div><div class="kv" id="kv3" style="color:var(--gold)">—<span class="ku">万</span></div><div class="kl">预估总毛利</div><div class="ks" id="ks3">—</div></div>
+    <div class="kc"><div class="ka" style="background:var(--purple)"></div><div class="kh"><div class="ki" style="background:var(--purple-lt)">🎯</div></div><div class="kv" id="kv4" style="color:var(--purple)">—<span class="ku">%</span></div><div class="kl">进店成交转化率</div><div class="ks" id="ks4">—</div></div>
+  </div>
+
+  <div class="sh">辅助指标</div>
+  <div class="g5">
+    <div class="sc"><div class="sclbl">📞 网销线索</div><div class="scv" style="color:var(--teal)" id="sv1">—<span class="scu">条</span></div><div class="scs" style="color:var(--teal)">有效 <span id="sv1s">—</span> 条</div></div>
+    <div class="sc"><div class="sclbl">🔥 H+A高意向</div><div class="scv" style="color:var(--red)" id="sv2">—<span class="scu">组</span></div><div class="scs" style="color:var(--t3)">筛选期间内</div></div>
+    <div class="sc"><div class="sclbl">🚗 试驾率</div><div class="scv" style="color:var(--blue)" id="sv3">—<span class="scu">%</span></div><div class="scs" style="color:var(--t3)">接受试驾÷到访</div></div>
+    <div class="sc"><div class="sclbl">📋 网销邀约到店</div><div class="scv" style="color:var(--orange)" id="sv4">—<span class="scu">条</span></div><div class="scs" style="color:var(--t3)">已到店+待到店</div></div>
+    <div class="sc"><div class="sclbl">⚠️ 网销战败</div><div class="scv" style="color:#DC2626" id="sv5">—<span class="scu">条</span></div><div class="scs" style="color:var(--t3)">需复盘</div></div>
+  </div>
+
+  <div class="g3">
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--red)"></div>进店来源渠道<span class="cbg tgr">按到访</span></div><div class="bl" id="ch1"></div></div>
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--green)"></div>成交客户来源<span class="cbg tgg">按成交</span></div><div class="bl" id="ch2"></div></div>
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--purple)"></div>全流程转化漏斗</div>
+      <div class="fl">
+        <div class="fr"><div class="flb">网销线索</div><div class="ft"><div class="ff" style="background:var(--blue)" id="ff1">0</div></div><div class="fn" id="fn1">0</div><div class="fp">—</div></div>
+        <div class="fr"><div class="flb">到店登记</div><div class="ft"><div class="ff" style="background:var(--red)" id="ff2">0</div></div><div class="fn" id="fn2">0</div><div class="fp" id="fp2">—</div></div>
+        <div class="fr"><div class="flb">试驾体验</div><div class="ft"><div class="ff" style="background:var(--purple)" id="ff3">0</div></div><div class="fn" id="fn3">0</div><div class="fp" id="fp3">—</div></div>
+        <div class="fr"><div class="flb">H+A意向</div><div class="ft"><div class="ff" style="background:var(--gold)" id="ff4">0</div></div><div class="fn" id="fn4">0</div><div class="fp" id="fp4">—</div></div>
+        <div class="fr"><div class="flb">最终成交</div><div class="ft"><div class="ff" style="background:var(--green)" id="ff5">0</div></div><div class="fn" id="fn5" style="color:var(--green);font-weight:900">0</div><div class="fp" id="fp5" style="color:var(--green)">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g75">
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--purple)"></div>顾问成交排行<span style="margin-left:auto;font-size:10px;color:var(--t3)">台数/毛利</span></div><div class="sal" id="sarank"></div></div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card"><div class="ct"><div class="ctb" style="background:var(--gold)"></div>成交车型排行</div><div class="bl" id="carrank"></div></div>
+      <div class="card"><div class="ct"><div class="ctb" style="background:var(--teal)"></div>意向级别分布</div><div class="bl" id="intentrank"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 前台登记 ══ -->
+<div class="pg" id="pg-rec">
+  <div class="card"><div class="ct"><div class="ctb" style="background:var(--red)"></div>进店记录明细 <span id="rec-count" style="font-size:11px;color:var(--t3);font-weight:400"></span></div>
+    <div class="tw"><table><thead><tr><th>日期</th><th>顾问</th><th>客户</th><th>来源渠道</th><th>购车类型</th><th>意向车型</th><th>来访次数</th><th>试驾</th><th>意向级别</th><th>成交瓶颈</th></tr></thead><tbody id="tbrec"></tbody></table></div>
+  </div>
+</div>
+
+<!-- ══ 网销跟进 ══ -->
+<div class="pg" id="pg-ol">
+  <div class="g2" style="margin-bottom:13px">
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--teal)"></div>线索来源平台</div><div class="bl" id="olplat"></div></div>
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--purple)"></div>专员跟进量</div><div class="bl" id="olsa"></div></div>
+  </div>
+  <div class="g2" style="margin-bottom:13px">
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--gold)"></div>线索车型分布</div><div class="bl" id="olcar"></div></div>
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--blue)"></div>意向级别分布</div><div class="bl" id="olintent"></div></div>
+  </div>
+  <div class="card"><div class="ct"><div class="ctb" style="background:var(--teal)"></div>跟进记录 <span id="ol-count" style="font-size:11px;color:var(--t3);font-weight:400"></span></div>
+    <div class="tw"><table><thead><tr><th>车型</th><th>细分车型</th><th>专员</th><th>二级来源</th><th>三级平台</th><th>线索状态</th><th>有效</th><th>意向</th><th>跟进结果</th></tr></thead><tbody id="tbol"></tbody></table></div>
+  </div>
+</div>
+
+<!-- ══ 成交分析 ══ -->
+<div class="pg" id="pg-dl">
+  <div class="pbox">
+    <div style="font-size:12px;font-weight:700;color:var(--green-dk);margin-bottom:9px">💰 毛利结构拆解</div>
+    <div class="pr"><span class="pk">合同总额</span><span class="pv" id="pc1">—</span></div>
+    <div class="pr"><span class="pk">厂家佣金合计</span><span class="pv" id="pc2">—</span></div>
+    <div class="pr"><span class="pk">贷款返利合计</span><span class="pv" id="pc3">—</span></div>
+    <div class="pr"><span class="pk">置换/补贴合计</span><span class="pv" id="pc4">—</span></div>
+    <div class="pr"><span class="pk">各项成本支出</span><span class="pv pn" id="pc5">—</span></div>
+    <div class="pr" style="background:rgba(22,163,74,.08);padding:7px 9px;border-radius:7px;margin-top:4px"><span class="pk" style="font-weight:700">预估净毛利</span><span class="pv" style="font-size:16px" id="pc6">—</span></div>
+  </div>
+  <div class="g2" style="margin-bottom:13px">
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--gold)"></div>成交车型分布</div><div class="bl" id="dlcar"></div></div>
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--purple)"></div>顾问成交+毛利</div><div class="sal" id="dlsa"></div></div>
+  </div>
+  <div class="card"><div class="ct"><div class="ctb" style="background:var(--green)"></div>成交明细 <span id="dl-count" style="font-size:11px;color:var(--t3);font-weight:400"></span></div>
+    <div class="tw"><table><thead><tr><th>#</th><th>订单日期</th><th>开票日期</th><th>顾问</th><th>客户</th><th>车型</th><th>合同价</th><th>开票价</th><th>佣金</th><th>贷款返利</th><th>预估毛利</th></tr></thead><tbody id="tbdl"></tbody></table></div>
+  </div>
+</div>
+
+<!-- ══ 周报 ══ -->
+<div class="pg" id="pg-wk">
+  <div class="g4" style="margin-bottom:16px">
+    <div class="kc"><div class="ka" style="background:var(--red)"></div><div class="kh"><div class="ki" style="background:var(--red-lt)">👥</div></div><div class="kv" id="wv1" style="color:var(--t1)">—<span class="ku">组</span></div><div class="kl">本周到访</div><div class="ks" id="ws1">—</div></div>
+    <div class="kc"><div class="ka" style="background:var(--green)"></div><div class="kh"><div class="ki" style="background:var(--green-lt)">🤝</div></div><div class="kv" id="wv2" style="color:var(--green)">—<span class="ku">台</span></div><div class="kl">本周成交</div><div class="ks" id="ws2">—</div></div>
+    <div class="kc"><div class="ka" style="background:var(--gold)"></div><div class="kh"><div class="ki" style="background:var(--gold-lt)">💰</div></div><div class="kv" id="wv3" style="color:var(--gold)">—<span class="ku">万</span></div><div class="kl">本周毛利</div><div class="ks" id="ws3">—</div></div>
+    <div class="kc"><div class="ka" style="background:var(--teal)"></div><div class="kh"><div class="ki" style="background:var(--teal-lt)">📞</div></div><div class="kv" id="wv4" style="color:var(--teal)">—<span class="ku">条</span></div><div class="kl">有效线索</div><div class="ks" id="ws4">—</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--red)"></div>本周日到访分布</div><div id="wkchart" style="min-height:110px"></div></div>
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--green)"></div>本周顾问成交</div><div class="sal" id="wksa"></div></div>
+  </div>
+  <div class="card" style="margin-top:13px"><div class="ct"><div class="ctb" style="background:var(--gold)"></div>⚡ H+A高意向未成交（重点追踪）</div>
+    <div class="tw"><table><thead><tr><th>客户</th><th>电话</th><th>意向车型</th><th>来源渠道</th><th>接待顾问</th><th>来访次数</th><th>意向级别</th><th>成交瓶颈</th></tr></thead><tbody id="tbhot"></tbody></table></div>
+  </div>
+</div>
+
+<!-- ══ 月报 ══ -->
+<div class="pg" id="pg-mo">
+  <div class="g4" style="margin-bottom:16px">
+    <div class="kc"><div class="ka" style="background:var(--red)"></div><div class="kh"><div class="ki" style="background:var(--red-lt)">👥</div></div><div class="kv" id="mv1" style="color:var(--t1)">—<span class="ku">组</span></div><div class="kl">月度总到访</div><div class="ks" id="ms1">—</div></div>
+    <div class="kc"><div class="ka" style="background:var(--green)"></div><div class="kh"><div class="ki" style="background:var(--green-lt)">🤝</div></div><div class="kv" id="mv2" style="color:var(--green)">—<span class="ku">台</span></div><div class="kl">月度成交台数</div><div class="ks" id="ms2">—</div></div>
+    <div class="kc"><div class="ka" style="background:var(--gold)"></div><div class="kh"><div class="ki" style="background:var(--gold-lt)">💰</div></div><div class="kv" id="mv3" style="color:var(--gold)">—<span class="ku">万</span></div><div class="kl">月度预估毛利</div><div class="ks" id="ms3">—</div></div>
+    <div class="kc"><div class="ka" style="background:var(--purple)"></div><div class="kh"><div class="ki" style="background:var(--purple-lt)">📊</div></div><div class="kv" id="mv4" style="color:var(--purple)">—<span class="ku">条</span></div><div class="kl">月度网销线索</div><div class="ks" id="ms4">—</div></div>
+  </div>
+  <div class="g3">
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--red)"></div>来源渠道月度汇总</div><div class="bl" id="moch"></div></div>
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--green)"></div>成交车型月度汇总</div><div class="bl" id="mocar"></div></div>
+    <div class="card"><div class="ct"><div class="ctb" style="background:var(--purple)"></div>顾问月度业绩</div><div class="sal" id="mosa"></div></div>
+  </div>
+  <div class="card" style="margin-top:13px"><div class="ct"><div class="ctb" style="background:var(--gold)"></div>月度毛利核算（逐顾问）</div>
+    <div class="tw"><table><thead><tr><th>顾问</th><th>台数</th><th>合同均价</th><th>佣金</th><th>贷款返利</th><th>置换补贴</th><th>各项支出</th><th>预估毛利</th></tr></thead><tbody id="tbmop"></tbody></table></div>
+  </div>
+</div>
+
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+// 配置
+// ════════════════════════════════════════
+const STORE_KEY = 'cj_worker_url';
+let WORKER_URL = localStorage.getItem(STORE_KEY) || 'https://cj-feishu.bourjollyschnitman936.workers.dev';
+
+// 运行时数据
+let REC = [], LEADS = [], DEALS = [], MEDIA = [];
+let FIELD_MAP = { rec:{}, ol:{}, dl:{}, md:{} };
+let lastUpdated = null;
+
+// ════════════════════════════════════════
+// 工具
+// ════════════════════════════════════════
+const $=id=>document.getElementById(id);
+function toast(msg){ const t=$('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),3000); }
+function pct(a,b){ return b===0?'0%':(a/b*100).toFixed(1)+'%'; }
+function wan(n){ return isNaN(n)?'—':(n/10000).toFixed(1); }
+function numt(n){ return isNaN(n)?'—':Math.round(n).toLocaleString('zh-CN'); }
+function fv(obj, ...keys){ for(const k of keys){ if(obj[k]!==undefined&&obj[k]!==null&&obj[k]!=='') return obj[k]; } return ''; }
+function toDateStr(v){
+  if(!v) return '';
+  if(typeof v === 'number') { const d=new Date(v); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  const s=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  if(/^\d{4}\/\d{1,2}\/\d{1,2}/.test(s)){ const p=s.split('/'); return p[0]+'-'+p[1].padStart(2,'0')+'-'+p[2].padStart(2,'0'); }
+  if(/^\d{4}\.\d{1,2}\.\d{1,2}/.test(s)){ const p=s.split('.'); return p[0]+'-'+p[1].padStart(2,'0')+'-'+p[2].padStart(2,'0'); }
+  return s.slice(0,10);
+}
+function inRange(d,s,e){ if(!d||!s||!e)return false; const ds=toDateStr(d); return ds>=s&&ds<=e; }
+function getRange(){ return {s:$('ds').value, e:$('de').value}; }
+function countBy(arr,fn){ const m={}; arr.forEach(r=>{const k=fn(r)||'未知';m[k]=(m[k]||0)+1;}); return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({key:k,val:v})); }
+function numVal(v){ const n=parseFloat(v); return isNaN(n)?0:n; }
+
+const CC={'G网络邀约':'#C8102E','E自然到店':'#3B82F6','B保有客户':'#16A34A','A老客介绍':'#7C3AED','C厂家活动':'#D97706','F竞品拦截':'#0891B2','D展厅自访':'#EA580C','default':'#9CA3AF'};
+const SC=['#C8102E','#2563EB','#16A34A','#D97706','#7C3AED','#0891B2','#EA580C','#6B7280','#14B8A6'];
+const IC={'H':'#DC2626','A':'#D97706','B':'#2563EB','C':'#6B7280','W':'#16A34A','O':'#0891B2','D':'#9CA3AF','N':'#9CA3AF'};
+
+function bars(data,total,cm,cid){
+  const el=$(cid); if(!el)return;
+  if(!data.length){el.innerHTML='<div style="text-align:center;color:var(--t3);padding:16px;font-size:12px">暂无数据</div>';return;}
+  const mv=Math.max(...data.map(d=>d.val),1);
+  el.innerHTML='';
+  data.slice(0,10).forEach(d=>{
+    const c=cm[d.key]||cm.default||'#9CA3AF';
+    const lbl=d.key.length>9?d.key.slice(0,9)+'…':d.key;
+    el.innerHTML+=`<div class="br"><div class="bdt" style="background:${c}"></div><div class="bnm" title="${d.key}">${lbl}</div><div class="bw"><div class="bf" style="width:${Math.round(d.val/mv*100)}%;background:${c}"></div></div><div class="bcnt">${d.val}</div><div class="bpct">${pct(d.val,total)}</div></div>`;
+  });
+}
+
+// ════════════════════════════════════════
+// 字段自适应读取
+// 飞书多维表格字段名由用户自定义，这里做宽松匹配
+// ════════════════════════════════════════
+function matchField(obj, patterns){
+  const keys = Object.keys(obj);
+  for(const pat of patterns){
+    const found = keys.find(k => k.includes(pat) || pat.includes(k));
+    if(found && obj[found]!==undefined && obj[found]!==null && obj[found]!=='') return obj[found];
+  }
+  return '';
+}
+function getText(v){
+  if(!v) return '';
+  if(typeof v === 'string') return v;
+  if(typeof v === 'number') return String(v);
+  if(Array.isArray(v)) return v.map(i=>i.text||i.name||i.value||String(i)).join('');
+  if(typeof v === 'object') return v.text||v.name||v.value||'';
+  return String(v);
+}
+function getNum(v){
+  if(!v && v!==0) return 0;
+  if(typeof v === 'number') return v;
+  const n = parseFloat(String(v).replace(/,/g,''));
+  return isNaN(n)?0:n;
+}
+function getDate(v){
+  if(!v) return '';
+  if(typeof v === 'number' && v > 1000000000000) return toDateStr(v);
+  return toDateStr(v);
+}
+
+// 标准化前台登记记录
+// Worker已在后端完成标准化，直接透传
+function normalizeRec(r){ return r; }
+function normalizeOl(r){ return r; }
+function normalizeDl(r){ return r; }
+
+// ════════════════════════════════════════
+// 连接 & 数据加载
+// ════════════════════════════════════════
+function setStatus(state, msg, sub){
+  const dot=$('sdot'), st=$('sstatus');
+  dot.className='sdot '+(state==='ok'?'ok':state==='loading'?'loading':'err');
+  st.textContent=msg;
+  if(sub) $('slastupdate').textContent=sub;
+}
+
+function showOverlay(msg, sub){
+  $('overlay').classList.remove('hide');
+  $('loading-msg').textContent=msg||'正在加载...';
+  $('loading-sub').textContent=sub||'';
+}
+function hideOverlay(){ $('overlay').classList.add('hide'); }
+
+async function loadData(){
+  if(!WORKER_URL){ hideOverlay(); setStatus('err','未配置Worker URL','请先填入Worker URL并点连接'); return; }
+  showOverlay('正在从飞书拉取数据...','首次约5-10秒，请稍候');
+  setStatus('loading','连接中...');
+  try {
+    const res = await fetch(WORKER_URL.replace(/\/+$/,'')+'/data', { signal: AbortSignal.timeout(30000) });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.error||'返回数据异常');
+
+    // 标准化
+    REC   = (data.reception||[]).map(normalizeRec).filter(r=>r.date||r.name);
+    LEADS = (data.online||[]).map(normalizeOl).filter(l=>l.model||l.sa);
+    DEALS = (data.deals||[]).map(normalizeDl).filter(d=>d.sa||d.customer);
+    MEDIA = data.media||[];
+
+    lastUpdated = new Date();
+    $('nbrec').textContent = REC.length;
+    $('nbol').textContent  = LEADS.length;
+    $('nbdl').textContent  = DEALS.length;
+    $('scount').textContent= `到访${REC.length} / 线索${LEADS.length} / 成交${DEALS.length}`;
+    $('slastupdate').textContent = '更新：'+lastUpdated.toLocaleTimeString('zh-CN');
+    setStatus('ok','已连接飞书');
+    hideOverlay();
+
+    // 自动设置日期范围
+    const allDates = REC.map(r=>r.date).filter(Boolean).sort();
+    if(allDates.length){
+      const minD = allDates[0];
+      const maxD = allDates[allDates.length-1];
+      const y=maxD.slice(0,4), mo=maxD.slice(5,7);
+      $('ds').value = y+'-'+mo+'-01';
+      $('de').value = localDate(new Date(parseInt(y), parseInt(mo), 0));
+    }
+    renderOv();
+    toast('✅ 飞书数据加载成功！到访'+REC.length+'条 / 线索'+LEADS.length+'条 / 成交'+DEALS.length+'台');
+  } catch(e) {
+    hideOverlay();
+    setStatus('err','连接失败',e.message);
+    $('errbox-ov').innerHTML=`<div class="errbox"><strong>⚠️ 数据加载失败</strong>${e.message}<br><br>请检查：① Worker URL是否正确 ② Worker是否已部署 ③ 飞书应用是否已授权多维表格</div>`;
+    toast('❌ 连接失败：'+e.message);
+  }
+}
+
+function saveAndConnect(){
+  const url = $('worker-url').value.trim();
+  if(!url){ toast('⚠️ 请填入 Worker URL'); return; }
+  WORKER_URL = url;
+  localStorage.setItem(STORE_KEY, url);
+  toast('✅ 已保存，正在连接...');
+  loadData();
+}
+
+async function refreshData(){
+  if(!WORKER_URL){ toast('⚠️ 请先填入 Worker URL'); return; }
+  await loadData();
+}
+
+// ════════════════════════════════════════
+// 日期范围
+// ════════════════════════════════════════
+function localDate(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function setRange(type, el){
+  document.querySelectorAll('.dq').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  const today = new Date();
+  const y=today.getFullYear(), m=today.getMonth(), d=today.getDate();
+  let s, e;
+  if(type==='today'){
+    s=e=localDate(today);
+  } else if(type==='week'){
+    const day=today.getDay()||7;
+    const mon=new Date(y,m,d-day+1);
+    const sun=new Date(y,m,d-day+7);
+    s=localDate(mon); e=localDate(sun);
+  } else if(type==='month'){
+    s=`${y}-${String(m+1).padStart(2,'0')}-01`;
+    e=localDate(new Date(y,m+1,0));
+  } else {
+    const allD=REC.map(r=>r.date).filter(Boolean).sort();
+    s=allD[0]||'2026-01-01'; e=allD[allD.length-1]||localDate(today);
+  }
+  $('ds').value=s; $('de').value=e;
+  renderOv();
+}
+
+// ════════════════════════════════════════
+// 经营总览
+// ════════════════════════════════════════
+function renderOv(){
+  const {s,e}=getRange();
+  if(!s||!e) return;
+
+  const visits = REC.filter(r=>inRange(r.date,s,e));
+  const deals  = DEALS.filter(d=>inRange(d.orderDate,s,e));
+  const tv=visits.length, td=deals.length;
+
+  const tContract = deals.reduce((a,d)=>a+d.contractPrice,0);
+  const tProfit   = deals.reduce((a,d)=>a+d.profit,0);
+  const avgProfit = td>0?tProfit/td:0;
+  const convRate  = tv>0?td/tv*100:0;
+
+  const validLeads   = LEADS.filter(l=>l.valid==='是').length;
+  const invitedLeads = visits.filter(v=>{const sa=v.onlineSa||''; return sa && sa!=='/' && sa.trim()!=='';}).length;
+  const failLeads    = LEADS.filter(l=>l.result==='战败').length;
+  const hasPhone     = visits.filter(v=>v.phone&&!v.phone.includes('微信')).length;
+  const driveCount   = visits.filter(v=>{const d=getText(v.drive); return d==='Y'||d.includes('是')||d.includes('已');}).length;
+  const hotCount     = visits.filter(v=>v.intent==='H'||v.intent==='A').length;
+  const days         = Math.max(1,Math.ceil((new Date(e)-new Date(s))/86400000)+1);
+
+  $('dsrc').textContent=`📂 到访${tv}条 | 成交${td}台 | 线索${LEADS.length}条`;
+
+  $('kv1').innerHTML=`${tv}<span class="ku">组</span>`;
+  $('ks1').textContent=`日均${(tv/days).toFixed(1)}组 · 留资率${tv>0?pct(hasPhone,tv):'0%'}`;
+  $('kv2').innerHTML=`${td}<span class="ku">台</span>`;
+  $('ks2').textContent=`合同额：${wan(tContract)}万元`;
+  $('kv3').innerHTML=`${wan(tProfit)}<span class="ku">万</span>`;
+  $('ks3').textContent=`单台均利：${numt(avgProfit)}元`;
+  $('kv4').innerHTML=`${convRate.toFixed(1)}<span class="ku">%</span>`;
+  $('ks4').textContent=`${td}台成交÷${tv}组到访`;
+
+  $('sv1').innerHTML=`${LEADS.length}<span class="scu">条</span>`; $('sv1s').textContent=validLeads;
+  $('sv2').innerHTML=`${hotCount}<span class="scu">组</span>`;
+  $('sv3').innerHTML=`${tv>0?(driveCount/tv*100).toFixed(1):0}<span class="scu">%</span>`;
+  $('sv4').innerHTML=`${invitedLeads}<span class="scu">条</span>`;
+  $('sv5').innerHTML=`${failLeads}<span class="scu">条</span>`;
+
+  bars(countBy(visits,r=>r.channel),tv,CC,'ch1');
+
+  // 成交来源反查
+  const dcm={};
+  deals.forEach(d=>{
+    const r=REC.find(v=>v.sa===d.sa&&v.name===d.customer);
+    const ch=r?r.channel:'G网络邀约';
+    dcm[ch]=(dcm[ch]||0)+1;
+  });
+  bars(Object.entries(dcm).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({key:k,val:v})),td,CC,'ch2');
+
+  // 漏斗
+  const fb=Math.max(LEADS.length,1);
+  [[1,LEADS.length,'var(--blue)'],[2,tv,'var(--red)'],[3,driveCount,'var(--purple)'],[4,hotCount,'var(--gold)'],[5,td,'var(--green)']].forEach(([i,v,c])=>{
+    const fe=$('ff'+i),fn=$('fn'+i);
+    if(fe){fe.style.width=Math.max(Math.round(v/fb*100),2)+'%';fe.textContent=v;}
+    if(fn)fn.textContent=v;
+    if(i>1){const fp=$('fp'+i);if(fp)fp.textContent=pct(v,LEADS.length||1);}
+  });
+
+  // 顾问排行
+  const sm={};
+  deals.forEach(d=>{if(!sm[d.sa])sm[d.sa]={deals:0,profit:0};sm[d.sa].deals++;sm[d.sa].profit+=d.profit;});
+  const sr=Object.entries(sm).sort((a,b)=>b[1].deals-a[1].deals);
+  const md2=sr[0]?sr[0][1].deals:1;
+  const el=$('sarank'); el.innerHTML='';
+  if(!sr.length){el.innerHTML='<div style="text-align:center;color:var(--t3);padding:16px;font-size:12px">该时段无成交数据</div>';}
+  sr.forEach(([nm,dt],i)=>{
+    const c=SC[i%SC.length],pc=dt.profit>=0?'color:var(--green)':'color:#DC2626';
+    el.innerHTML+=`<div class="sar"><div class="srk">${['🥇','🥈','🥉'][i]||i+1}</div><div class="sav" style="background:${c}">${nm[0]||'?'}</div><div class="si"><div class="sn">${nm}</div><div class="sd">成交${dt.deals}台</div></div><div class="sbw"><div class="sbb"><div class="sbf" style="width:${Math.round(dt.deals/md2*100)}%;background:${c}"></div></div><div class="spc" style="${pc}">${dt.profit>=0?'+':''}${wan(dt.profit)}万</div></div><div style="text-align:right"><div class="sdt">${dt.deals}</div><div style="font-size:9px;color:var(--t3)">台</div></div></div>`;
+  });
+
+  // 车型排行
+  const cm={};
+  deals.forEach(d=>{const k=d.model.split(' ')[0]||d.model;cm[k]=(cm[k]||0)+1;});
+  const carC={'E8':'#C8102E','向往E8':'#C8102E','M8':'#7C3AED','M6':'#2563EB','GS8':'#16A34A','GS3':'#0891B2','影豹':'#14B8A6','向往':'#EA580C','S7':'#D97706','default':'#9CA3AF'};
+  bars(Object.entries(cm).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({key:k,val:v})),td,carC,'carrank');
+
+  // 意向分布
+  const iLabels={'H':'H级随时成交','A':'A级7日内','B':'B级15日内','C':'C级30日+','W':'老客售后','O':'已订确认','D':'提车办手续'};
+  const im={};
+  visits.forEach(v=>{const k=v.intent||'未知';im[k]=(im[k]||0)+1;});
+  const intentEl=$('intentrank'); intentEl.innerHTML='';
+  const mv2=Math.max(...Object.values(im),1);
+  Object.entries(im).sort((a,b)=>b[1]-a[1]).forEach(([k,v])=>{
+    const c=IC[k]||'#9CA3AF',lbl=iLabels[k]||k;
+    intentEl.innerHTML+=`<div class="br"><div class="bdt" style="background:${c}"></div><div class="bnm" title="${lbl}">${lbl.length>9?lbl.slice(0,9)+'…':lbl}</div><div class="bw"><div class="bf" style="width:${Math.round(v/mv2*100)}%;background:${c}"></div></div><div class="bcnt">${v}</div><div class="bpct">${pct(v,tv)}</div></div>`;
+  });
+}
+
+// ════════════════════════════════════════
+// 前台登记
+// ════════════════════════════════════════
+function renderRec(){
+  $('rec-count').textContent=`共${REC.length}条`;
+  const tb=$('tbrec'); tb.innerHTML='';
+  if(!REC.length){tb.innerHTML='<tr><td colspan="10" class="etc">暂无数据，请先连接飞书</td></tr>';return;}
+  REC.forEach(r=>{
+    const ib=r.intent==='H'?'tgr':r.intent==='A'?'tgy':r.intent==='O'?'tgg':r.intent==='D'?'tgtl':'tgx';
+    const vis=parseInt(r.visits)||1;
+    const drv=getText(r.drive);const isDrv=drv==='Y'||drv.includes('是')||drv.includes('已');
+    const ch=r.channel; const chTag=ch.includes('网络')?'tgr':ch.includes('保有')||ch.includes('老客')?'tgg':'tgb';
+    tb.innerHTML+=`<tr><td>${r.date}</td><td>${r.sa}</td><td>${r.name||'—'}</td><td><span class="tag ${chTag}">${ch}</span></td><td>${r.buytype}</td><td>${r.model}</td><td style="font-weight:700;color:${vis>=3?'var(--red)':'inherit'}">${vis}</td><td><span class="tag ${isDrv?'tgg':'tgx'}">${isDrv?'已试驾':'未'}</span></td><td><span class="tag ${ib}">${r.intent||'—'}</span></td><td style="font-size:11px;color:var(--t2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.bottleneck}">${r.bottleneck}</td></tr>`;
+  });
+}
+
+// ════════════════════════════════════════
+// 网销跟进
+// ════════════════════════════════════════
+function renderOl(){
+  const total=LEADS.length;
+  $('ol-count').textContent=`共${total}条`;
+  const pc={'汽车之家':'#C8102E','懂车帝':'#2563EB','抖音':'#FF0050','易车':'#16A34A','高德地图':'#7C3AED','视频号':'#07C160','APP注册':'#0891B2','厂家分配':'#D97706','default':'#9CA3AF'};
+  bars(countBy(LEADS,l=>l.src3),total,pc,'olplat');
+  bars(countBy(LEADS,l=>l.sa),total,{'唐明达':'#C8102E','王绮云':'#2563EB','康利林':'#16A34A','default':'#9CA3AF'},'olsa');
+  bars(countBy(LEADS,l=>l.model),total,{'影豹':'#C8102E','GS8':'#16A34A','GS4 MAX':'#2563EB','M6系列':'#7C3AED','M8系列':'#D97706','E8':'#0891B2','default':'#9CA3AF'},'olcar');
+  bars(countBy(LEADS,l=>l.intent),total,IC,'olintent');
+  const tb=$('tbol'); tb.innerHTML='';
+  if(!LEADS.length){tb.innerHTML='<tr><td colspan="9" class="etc">暂无数据</td></tr>';return;}
+  LEADS.slice(0,200).forEach(l=>{
+    const sb=l.status.includes('跟进')?'tgb':l.status.includes('无效')?'tgx':'tgg';
+    const ib=l.intent==='H'?'tgr':l.intent==='A'?'tgy':l.intent==='B'?'tgb':'tgx';
+    const rb=l.result.includes('战败')?'tgr':l.result.includes('无效')?'tgx':'tgg';
+    tb.innerHTML+=`<tr><td>${l.model}</td><td style="color:var(--t2);font-size:11px">${l.submodel}</td><td>${l.sa}</td><td style="font-size:11px">${l.src2}</td><td>${l.src3}</td><td><span class="tag ${sb}">${l.status}</span></td><td><span class="tag ${l.valid.includes('是')||l.valid.includes('有效')?'tgg':'tgx'}">${l.valid||'—'}</span></td><td><span class="tag ${ib}">${l.intent||'—'}</span></td><td><span class="tag ${rb}">${l.result||'—'}</span></td></tr>`;
+  });
+}
+
+// ════════════════════════════════════════
+// 成交分析
+// ════════════════════════════════════════
+function renderDl(){
+  $('dl-count').textContent=`共${DEALS.length}台`;
+  const tc=DEALS.reduce((a,d)=>a+d.contractPrice,0);
+  const tco=DEALS.reduce((a,d)=>a+d.commission,0);
+  const tr=DEALS.reduce((a,d)=>a+d.loanRebate,0);
+  const tt=DEALS.reduce((a,d)=>a+d.tradeSubsidy+d.tradeReturn,0);
+  const te=DEALS.reduce((a,d)=>a+d.insurance+d.loanFee+d.extraGift+d.referral+d.stdGift,0);
+  const tp=DEALS.reduce((a,d)=>a+d.profit,0);
+  $('pc1').textContent='¥'+wan(tc)+'万'; $('pc2').textContent='+¥'+wan(tco)+'万';
+  $('pc3').textContent='+¥'+wan(tr)+'万';  $('pc4').textContent='+¥'+wan(tt)+'万';
+  $('pc5').textContent='-¥'+wan(te)+'万';  $('pc6').textContent='¥'+wan(tp)+'万';
+  const cm={'E8':'#C8102E','向往E8':'#C8102E','M8':'#7C3AED','M6':'#2563EB','GS8':'#16A34A','GS3':'#0891B2','影豹':'#14B8A6','default':'#9CA3AF'};
+  bars(countBy(DEALS,d=>d.model.split(' ')[0]||d.model),DEALS.length,cm,'dlcar');
+  const sm={};
+  DEALS.forEach(d=>{if(!sm[d.sa])sm[d.sa]={deals:0,profit:0};sm[d.sa].deals++;sm[d.sa].profit+=d.profit;});
+  const sr=Object.entries(sm).sort((a,b)=>b[1].deals-a[1].deals);
+  const md2=sr[0]?sr[0][1].deals:1;
+  const se=$('dlsa'); se.innerHTML='';
+  sr.forEach(([nm,dt],i)=>{
+    const c=SC[i%SC.length],pc=dt.profit>=0?'color:var(--green)':'color:#DC2626';
+    se.innerHTML+=`<div class="sar"><div class="srk">${i+1}</div><div class="sav" style="background:${c}">${nm[0]||'?'}</div><div class="si"><div class="sn">${nm}</div><div class="sd" style="${pc}">${dt.profit>=0?'+':''}${wan(dt.profit)}万毛利</div></div><div class="sbw"><div class="sbb"><div class="sbf" style="width:${Math.round(dt.deals/md2*100)}%;background:${c}"></div></div></div><div class="sdt">${dt.deals}</div></div>`;
+  });
+  const tb=$('tbdl'); tb.innerHTML='';
+  if(!DEALS.length){tb.innerHTML='<tr><td colspan="11" class="etc">暂无数据</td></tr>';return;}
+  DEALS.forEach((d,i)=>{
+    const pc=d.profit>=0?'color:var(--green);font-weight:700':'color:#DC2626;font-weight:700';
+    tb.innerHTML+=`<tr><td style="color:var(--t3)">${i+1}</td><td>${d.orderDate}</td><td>${d.invoiceDate||'<span style="color:var(--gold)">待开票</span>'}</td><td>${d.sa}</td><td>${d.customer}</td><td style="font-weight:600">${d.model}</td><td>${wan(d.contractPrice)}万</td><td>${wan(d.invoicePrice)}万</td><td>${numt(d.commission)}</td><td>${numt(d.loanRebate)}</td><td style="${pc}">${d.profit>=0?'+':''}${numt(d.profit)}</td></tr>`;
+  });
+}
+
+// ════════════════════════════════════════
+// 周报
+// ════════════════════════════════════════
+function renderWk(){
+  const now=new Date(), day=now.getDay()||7;
+  const mon=new Date(now); mon.setDate(now.getDate()-day+1);
+  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const ws=mon.toISOString().slice(0,10), we=sun.toISOString().slice(0,10);
+  const wv=REC.filter(r=>inRange(r.date,ws,we));
+  const wd=DEALS.filter(d=>inRange(d.orderDate,ws,we));
+  const wc=wd.reduce((a,d)=>a+d.contractPrice,0);
+  const wp=wd.reduce((a,d)=>a+d.profit,0);
+  const vl=LEADS.filter(l=>l.valid.includes('是')||l.valid.includes('有效')).length;
+  $('wv1').innerHTML=`${wv.length}<span class="ku">组</span>`; $('ws1').textContent=`日均${(wv.length/7).toFixed(1)}组`;
+  $('wv2').innerHTML=`${wd.length}<span class="ku">台</span>`; $('ws2').textContent=`合同额${wan(wc)}万`;
+  $('wv3').innerHTML=`${wan(wp)}<span class="ku">万</span>`; $('ws3').textContent=`单台均利${wd.length>0?numt(wp/wd.length):0}元`;
+  $('wv4').innerHTML=`${vl}<span class="ku">条</span>`; $('ws4').textContent=`有效率${pct(vl,LEADS.length)}`;
+  const days=[['周一',0],['周二',1],['周三',2],['周四',3],['周五',4],['周六',5],['周日',6]];
+  const dc=days.map(([n,i])=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return REC.filter(r=>r.date===d.toISOString().slice(0,10)).length;});
+  const dd=days.map(([n,i])=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return DEALS.filter(x=>x.orderDate===d.toISOString().slice(0,10)).length;});
+  const mx=Math.max(...dc,1);
+  const ch=$('wkchart'); ch.innerHTML='<div class="bch">';
+  days.forEach(([n],i)=>{
+    const h=Math.round(dc[i]/mx*86)+2;
+    ch.querySelector('div').innerHTML+=`<div class="bcol"><div class="bvl">${dc[i]||''}</div><div class="bbar" style="height:${h}px">${dd[i]>0?`<span class="bdl">${dd[i]}台</span>`:''}</div><div class="bday">${n}</div></div>`;
+  });
+  ch.querySelector('div').innerHTML+='</div>';
+  const wse=$('wksa'); wse.innerHTML='';
+  const wsm={};wd.forEach(d=>{wsm[d.sa]=(wsm[d.sa]||0)+1;});
+  const wsr=Object.entries(wsm).sort((a,b)=>b[1]-a[1]);
+  if(!wsr.length){wse.innerHTML='<div style="text-align:center;color:var(--t3);padding:14px;font-size:12px">本周暂无成交</div>';}
+  const mw=wsr[0]?wsr[0][1]:1;
+  wsr.forEach(([nm,cnt],i)=>{
+    const c=SC[i%SC.length];
+    wse.innerHTML+=`<div class="sar"><div class="srk">${['🥇','🥈','🥉'][i]||i+1}</div><div class="sav" style="background:${c}">${nm[0]||'?'}</div><div class="si"><div class="sn">${nm}</div><div class="sd">本周${cnt}台</div></div><div class="sbw"><div class="sbb"><div class="sbf" style="width:${Math.round(cnt/mw*100)}%;background:${c}"></div></div></div><div class="sdt">${cnt}</div></div>`;
+  });
+  const hot=REC.filter(r=>r.intent==='H'||r.intent==='A');
+  const tb=$('tbhot'); tb.innerHTML='';
+  if(!hot.length){tb.innerHTML='<tr><td colspan="8" class="etc">暂无高意向未成交客户</td></tr>';return;}
+  hot.slice(0,25).forEach(r=>{
+    const ph=r.phone&&r.phone.length>=7?r.phone.slice(0,3)+'****'+r.phone.slice(-4):r.phone||'—';
+    tb.innerHTML+=`<tr><td style="font-weight:600">${r.name}</td><td style="color:var(--t3);font-size:11px">${ph}</td><td>${r.model}</td><td><span class="tag ${r.channel.includes('网络')?'tgr':'tgb'}">${r.channel}</span></td><td>${r.sa}</td><td style="font-weight:700;color:${parseInt(r.visits)>=3?'var(--red)':'inherit'}">${r.visits}</td><td><span class="tag ${r.intent==='H'?'tgr':'tgy'}">${r.intent}级</span></td><td style="font-size:11px;color:var(--t2)">${r.bottleneck}</td></tr>`;
+  });
+}
+
+// ════════════════════════════════════════
+// 月报
+// ════════════════════════════════════════
+function renderMo(){
+  const now=new Date(), y=now.getFullYear(), m=now.getMonth();
+  const ms=`${y}-${String(m+1).padStart(2,'0')}-01`, me=new Date(y,m+1,0).toISOString().slice(0,10);
+  const mv2=REC.filter(r=>inRange(r.date,ms,me));
+  const md2=DEALS.filter(d=>inRange(d.orderDate,ms,me));
+  const mc=md2.reduce((a,d)=>a+d.contractPrice,0), mp=md2.reduce((a,d)=>a+d.profit,0);
+  const vl=LEADS.filter(l=>l.valid.includes('是')||l.valid.includes('有效')).length;
+  $('mv1').innerHTML=`${mv2.length}<span class="ku">组</span>`; $('ms1').textContent=`日均${(mv2.length/30).toFixed(1)}组`;
+  $('mv2').innerHTML=`${md2.length}<span class="ku">台</span>`; $('ms2').textContent=`转化率${mv2.length>0?pct(md2.length,mv2.length):'0%'}`;
+  $('mv3').innerHTML=`${wan(mp)}<span class="ku">万</span>`; $('ms3').textContent=`合同额${wan(mc)}万`;
+  $('mv4').innerHTML=`${LEADS.length}<span class="ku">条</span>`; $('ms4').textContent=`有效${vl}条`;
+  bars(countBy(mv2,r=>r.channel),mv2.length,CC,'moch');
+  const cm={};md2.forEach(d=>{const k=d.model.split(' ')[0]||d.model;cm[k]=(cm[k]||0)+1;});
+  bars(Object.entries(cm).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({key:k,val:v})),md2.length,{'E8':'#C8102E','向往E8':'#C8102E','M8':'#7C3AED','M6':'#2563EB','GS8':'#16A34A','default':'#9CA3AF'},'mocar');
+  const sm={};
+  md2.forEach(d=>{if(!sm[d.sa])sm[d.sa]={deals:0,contract:0,commission:0,rebate:0,trade:0,cost:0,profit:0};sm[d.sa].deals++;sm[d.sa].contract+=d.contractPrice;sm[d.sa].commission+=d.commission;sm[d.sa].rebate+=d.loanRebate;sm[d.sa].trade+=d.tradeSubsidy+d.tradeReturn;sm[d.sa].cost+=d.insurance+d.loanFee+d.extraGift+d.referral+d.stdGift;sm[d.sa].profit+=d.profit;});
+  const sr=Object.entries(sm).sort((a,b)=>b[1].deals-a[1].deals);
+  const mx2=sr[0]?sr[0][1].deals:1;
+  const se=$('mosa'); se.innerHTML='';
+  sr.forEach(([nm,dt],i)=>{
+    const c=SC[i%SC.length],pc=dt.profit>=0?'color:var(--green)':'color:#DC2626';
+    se.innerHTML+=`<div class="sar"><div class="srk">${i+1}</div><div class="sav" style="background:${c}">${nm[0]||'?'}</div><div class="si"><div class="sn">${nm}</div><div class="sd">均价${wan(dt.contract/dt.deals)}万</div></div><div class="sbw"><div class="sbb"><div class="sbf" style="width:${Math.round(dt.deals/mx2*100)}%;background:${c}"></div></div><div class="spc" style="${pc}">${dt.profit>=0?'+':''}${wan(dt.profit)}万</div></div><div class="sdt">${dt.deals}</div></div>`;
+  });
+  const tb=$('tbmop'); tb.innerHTML='';
+  sr.forEach(([nm,dt])=>{
+    const pc=dt.profit>=0?'color:var(--green);font-weight:800':'color:#DC2626;font-weight:800';
+    tb.innerHTML+=`<tr><td style="font-weight:700">${nm}</td><td>${dt.deals}台</td><td>${wan(dt.contract/dt.deals)}万</td><td>+${wan(dt.commission)}万</td><td>+${wan(dt.rebate)}万</td><td>+${wan(dt.trade)}万</td><td style="color:#DC2626">-${wan(dt.cost)}万</td><td style="${pc}">${dt.profit>=0?'+':''}${wan(dt.profit)}万</td></tr>`;
+  });
+}
+
+// ════════════════════════════════════════
+// 页面切换 & 导出
+// ════════════════════════════════════════
+const renderMap={ov:renderOv,rec:renderRec,ol:renderOl,dl:renderDl,wk:renderWk,mo:renderMo};
+function goPage(id,el){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  $('pg-'+id).classList.add('on'); el.classList.add('on');
+  if(renderMap[id]) renderMap[id]();
+}
+
+function exportData(){
+  const payload={exportTime:new Date().toISOString(),workerUrl:WORKER_URL,reception:REC,leads:LEADS,deals:DEALS};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  const now=new Date();
+  a.download=`长江店_数据备份_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}.json`;
+  a.href=URL.createObjectURL(blob); a.click();
+  toast('✅ 数据已导出');
+}
+
+// ════════════════════════════════════════
+// 初始化
+// ════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  $('tdate').textContent=new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit'});
+  const saved=localStorage.getItem(STORE_KEY);
+  if(saved){ $('worker-url').value=saved; }
+  $('ds').value=new Date().toISOString().slice(0,8)+'01';
+  $('de').value=new Date(new Date().getFullYear(),new Date().getMonth()+1,0).toISOString().slice(0,10);
+  if(WORKER_URL){ $('worker-url').value=WORKER_URL; loadData(); }
+  else { hideOverlay(); setStatus('err','请配置Worker URL'); }
+});
+</script>
+</body>
+</html>
